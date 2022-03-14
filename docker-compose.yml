@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:14
+    ports:
+      - 771:5432
+    environment:
+      - POSTGRES_USER=urlshortener
+      - POSTGRES_PASSWORD=12345
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    command: ["postgres", "-c", "log_statement=all"]

@@ -1,0 +1,7 @@
+env: dev
+loglevel: debug
+port: 4401
+domain: https://sh.ru
+jwt_secret_key: 12345
+db:
+  dsn: postgres://urlshortener:12345@localhost:771/urlshortener?sslmode=disable
