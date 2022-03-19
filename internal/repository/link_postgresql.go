@@ -1,5 +1,7 @@
 package repository
 
+//go:generate mockgen -source=mapper.go -destination=./mapper_mock.go -package=handlers
+
 import (
 	"context"
 	"errors"
@@ -33,6 +35,8 @@ func (r *LinkPostgresqlRepository) Create(ctx context.Context, longUrl string) (
 	if err := r.querier.QueryRow(ctx, sql, args...).Scan(&link.ID, &link.CreatedAt); err != nil {
 		return models.Link{}, fmt.Errorf("unable to insert record to links table: %w", err)
 	}
+
+	link.LongURL = longUrl
 
 	return link, nil
 }
