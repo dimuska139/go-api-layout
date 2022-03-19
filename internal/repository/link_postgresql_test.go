@@ -23,6 +23,8 @@ func TestLinkPostgresqlRepository_Create(t *testing.T) {
 		LongURL: faker.URL(),
 	}
 
+	expectedSql := "INSERT INTO links (full_url,created_at) VALUES ($1,$2) RETURNING id, created_at"
+
 	type fields struct {
 		querier pgxtype.Querier
 		qb      squirrel.StatementBuilderType
@@ -56,7 +58,7 @@ func TestLinkPostgresqlRepository_Create(t *testing.T) {
 					Times(1)
 
 				querierMock.EXPECT().
-					QueryRow(ctx, gomock.Any(), link.LongURL, "now()").
+					QueryRow(ctx, expectedSql, link.LongURL, "now()").
 					Return(rowMock).
 					Times(1)
 			},
@@ -79,7 +81,7 @@ func TestLinkPostgresqlRepository_Create(t *testing.T) {
 					Times(1)
 
 				querierMock.EXPECT().
-					QueryRow(ctx, gomock.Any(), link.LongURL, "now()").
+					QueryRow(ctx, expectedSql, link.LongURL, "now()").
 					Return(rowMock).
 					Times(1)
 			},
