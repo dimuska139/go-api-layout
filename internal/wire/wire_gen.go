@@ -3,16 +3,17 @@
 //go:generate go run github.com/google/wire/cmd/wire
 //+build !wireinject
 
-package infrastructure
+package wire
 
 import (
 	"github.com/dimuska139/urlshortener/internal/api"
 	"github.com/dimuska139/urlshortener/internal/api/middleware"
 	"github.com/dimuska139/urlshortener/internal/config"
 	"github.com/dimuska139/urlshortener/internal/handlers"
+	"github.com/dimuska139/urlshortener/internal/http"
 	"github.com/dimuska139/urlshortener/internal/logging"
+	"github.com/dimuska139/urlshortener/internal/postgresql"
 	"github.com/dimuska139/urlshortener/internal/services"
-	"github.com/dimuska139/urlshortener/internal/storage"
 )
 
 // Injectors from wire.go:
@@ -35,13 +36,14 @@ func InitRestAPI(config2 *config.Config, logger logging.Loggerer) (*api.RestAPI,
 	if err != nil {
 		return nil, err
 	}
-	pool, err := storage.NewPostgresPool(config2, logger)
+	pool, err := postgresql.NewPostgresPool(config2, logger)
 	if err != nil {
 		return nil, err
 	}
-	database := storage.NewDatabase(pool)
-	shrinkService := services.NewShrinkService(config2, database)
-	statisticsService := services.NewStatisticsService(config2, database)
+	client := http.NewHttpClient()
+	storage := services.NewDatabase(config2, logger, pool, client)
+	shrinkService := services.NewShrinkService(config2, storage)
+	statisticsService := services.NewStatisticsService(config2, storage)
 	mapper := handlers.NewResponseMapper(config2)
 	shrinkHandler := handlers.NewShrinkHandler(logger, shrinkService, statisticsService, mapper)
 	restAPI, err := api.NewRestAPI(config2, logger, middlewareFactory, shrinkHandler)
@@ -51,7 +53,7 @@ func InitRestAPI(config2 *config.Config, logger logging.Loggerer) (*api.RestAPI,
 	return restAPI, nil
 }
 
-func InitMigrator(config2 *config.Config, logger logging.Loggerer) (*storage.Migrator, error) {
-	migrator := storage.NewMigrator(config2, logger)
+func InitMigrator(config2 *config.Config, logger logging.Loggerer) (*services.Migrator, error) {
+	migrator := services.NewMigrator(config2, logger)
 	return migrator, nil
 }

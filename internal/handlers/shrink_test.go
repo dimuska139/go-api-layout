@@ -7,7 +7,6 @@ import (
 	"github.com/dimuska139/urlshortener/internal/gen/restapi/operations"
 	"github.com/dimuska139/urlshortener/internal/logging"
 	models2 "github.com/dimuska139/urlshortener/internal/models"
-	"github.com/dimuska139/urlshortener/internal/services"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -18,8 +17,8 @@ import (
 func TestNewShrinkHandler(t *testing.T) {
 	type args struct {
 		logger            logging.Loggerer
-		shrinkService     services.ShrinkServiceInterface
-		statisticsService services.StatisticsServiceInterface
+		shrinkService     ShrinkServiceInterface
+		statisticsService StatisticsServiceInterface
 		responseMapper    Mapper
 	}
 	ctrl := gomock.NewController(t)
@@ -33,17 +32,16 @@ func TestNewShrinkHandler(t *testing.T) {
 		{
 			name: "test create new shrink handler",
 			args: args{
-				logger: logger,
-				shrinkService: nil,
+				logger:            logger,
+				shrinkService:     nil,
 				statisticsService: nil,
-				responseMapper: mapper,
+				responseMapper:    mapper,
 			},
 			want: &ShrinkHandler{
-				logger: logger,
+				logger:         logger,
 				responseMapper: mapper,
 			},
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -56,8 +54,8 @@ func TestNewShrinkHandler(t *testing.T) {
 func TestShrinkHandler_Redirect(t *testing.T) {
 	type fields struct {
 		logger            *logging.Logger
-		shrinkUsecase     services.ShrinkServiceInterface
-		statisticsUsecase services.StatisticsServiceInterface
+		shrinkUsecase     ShrinkServiceInterface
+		statisticsUsecase StatisticsServiceInterface
 	}
 	type args struct {
 		params operations.GetShortCodeParams
@@ -87,7 +85,7 @@ func TestShrinkHandler_Redirect(t *testing.T) {
 func TestShrinkHandler_Shrink(t *testing.T) {
 	type fields struct {
 		logger            logging.Loggerer
-		statisticsUsecase services.StatisticsServiceInterface
+		statisticsUsecase StatisticsServiceInterface
 	}
 
 	ctrl := gomock.NewController(t)
@@ -100,7 +98,7 @@ func TestShrinkHandler_Shrink(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		prepare func(shrinkMock *services.MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer)
+		prepare func(shrinkMock *MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer)
 		args    args
 		want    middleware.Responder
 	}{
@@ -110,7 +108,7 @@ func TestShrinkHandler_Shrink(t *testing.T) {
 				logger:            logging.NewLogger(nil),
 				statisticsUsecase: nil,
 			},
-			prepare: func(shrinkMock *services.MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer) {
+			prepare: func(shrinkMock *MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer) {
 				err := errors.New("error")
 				shrinkMock.EXPECT().
 					CreateShortCode(gomock.Any(), gomock.Any()).
@@ -136,7 +134,7 @@ func TestShrinkHandler_Shrink(t *testing.T) {
 				logger:            logging.NewLogger(nil),
 				statisticsUsecase: nil,
 			},
-			prepare: func(shrinkMock *services.MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer) {
+			prepare: func(shrinkMock *MockShrinkServiceInterface, mapperMock *MockMapper, logger *logging.MockLoggerer) {
 				link := models2.Link{
 					Code:     "1b",
 					LongURL:  "https://ya.ru",
@@ -161,15 +159,13 @@ func TestShrinkHandler_Shrink(t *testing.T) {
 				},
 			},
 			want: &operations.PostShrinkOK{
-				Payload: &operations.PostShrinkOKBody{
-
-				},
+				Payload: &operations.PostShrinkOKBody{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shrinkMock := services.NewMockShrinkServiceInterface(ctrl)
+			shrinkMock := NewMockShrinkServiceInterface(ctrl)
 			mapper := NewMockMapper(ctrl)
 			logger := logging.NewMockLoggerer(ctrl)
 

@@ -1,11 +1,13 @@
 package constants
 
+import "time"
+
 const (
-	DbPoolIdleConns            = 1
-	DbPoolMaxConns             = 2
-	DbPoolHealthcheckPeriodSec = 5
-	DbMaxConnIdleTimeSec       = 10
-	DbMaxConnLifetimeSec       = 50
-	DbTimeoutSec               = 1
-	MigrationsTableName        = "migrations"
+	DbPoolIdleConns         = 1
+	DbPoolMaxConns          = 2
+	DbPoolHealthcheckPeriod = 5 * time.Second
+	DbMaxConnIdleTime       = 10 * time.Second
+	DbMaxConnLifetime       = 50 * time.Second
+	DbTimeout               = 1 * time.Second
+	MigrationsTableName     = "migrations"
 )

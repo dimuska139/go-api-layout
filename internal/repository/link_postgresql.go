@@ -7,20 +7,27 @@ import (
 	"errors"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/dimuska139/urlshortener/internal/logging"
 	"github.com/dimuska139/urlshortener/internal/models"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
 )
 
 type LinkPostgresqlRepository struct {
+	logger  logging.Loggerer
 	querier pgxtype.Querier
 	qb      sq.StatementBuilderType
 }
 
-func NewLinkPostgresqlRepository(querier pgxtype.Querier, qb sq.StatementBuilderType) *LinkPostgresqlRepository {
-	return &LinkPostgresqlRepository{querier: querier, qb: qb}
+func NewLinkPostgresqlRepository(logger logging.Loggerer, querier pgxtype.Querier) *LinkPostgresqlRepository {
+	return &LinkPostgresqlRepository{
+		logger:  logger,
+		querier: querier,
+		qb:      sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+	}
 }
 
+// Create сохраняет ссылку в базу данных и возвращает структуру ссылки
 func (r *LinkPostgresqlRepository) Create(ctx context.Context, longUrl string) (models.Link, error) {
 	sql, args, err := r.qb.Insert("links").
 		Columns("full_url", "created_at").
@@ -41,6 +48,7 @@ func (r *LinkPostgresqlRepository) Create(ctx context.Context, longUrl string) (
 	return link, nil
 }
 
+// LinkPostgresqlRepository записывает код для ссылки
 func (r *LinkPostgresqlRepository) SetShortcode(ctx context.Context, id int, shortcode string) error {
 	sql, args, err := r.qb.Update("links").
 		Set("code", shortcode).
@@ -56,6 +64,7 @@ func (r *LinkPostgresqlRepository) SetShortcode(ctx context.Context, id int, sho
 	return err
 }
 
+// GetLongUrlByCode возвращает полный url по коду
 func (r *LinkPostgresqlRepository) GetLongUrlByCode(ctx context.Context, shortCode string) (string, error) {
 	sql, args, err := r.qb.Select("full_url").
 		From("links").
@@ -70,7 +79,7 @@ func (r *LinkPostgresqlRepository) GetLongUrlByCode(ctx context.Context, shortCo
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", nil
 		}
-		return "", fmt.Errorf("unable to get full url: %w", err)
+		return "", fmt.Errorf("unable to get full url by code (%s): %w", shortCode, err)
 	}
 
 	return fullUrl, nil

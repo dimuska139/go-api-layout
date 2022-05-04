@@ -4,16 +4,22 @@ import (
 	"context"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/dimuska139/urlshortener/internal/logging"
 	"github.com/jackc/pgtype/pgxtype"
 )
 
 type StatisticsPostgresqlRepository struct {
+	logger  logging.Loggerer
 	querier pgxtype.Querier
 	qb      sq.StatementBuilderType
 }
 
-func NewStatisticsPostgresqlRepository(querier pgxtype.Querier, qb sq.StatementBuilderType) *StatisticsPostgresqlRepository {
-	return &StatisticsPostgresqlRepository{querier: querier, qb: qb}
+func NewStatisticsPostgresqlRepository(logger logging.Loggerer, querier pgxtype.Querier) *StatisticsPostgresqlRepository {
+	return &StatisticsPostgresqlRepository{
+		logger:  logger,
+		querier: querier,
+		qb:      sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+	}
 }
 
 func (r *StatisticsPostgresqlRepository) SaveRedirectEvent(ctx context.Context, code string, userAgent string) error {

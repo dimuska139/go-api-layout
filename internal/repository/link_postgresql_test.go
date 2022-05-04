@@ -6,6 +6,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bxcodec/faker/v3"
+	"github.com/dimuska139/urlshortener/internal/logging"
 	"github.com/dimuska139/urlshortener/internal/models"
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgtype/pgxtype"
@@ -180,8 +181,8 @@ func TestLinkPostgresqlRepository_SetShortcode(t *testing.T) {
 
 func TestNewLinkPostgresqlRepository(t *testing.T) {
 	type args struct {
+		logger  logging.Loggerer
 		querier pgxtype.Querier
-		qb      squirrel.StatementBuilderType
 	}
 	tests := []struct {
 		name string
@@ -192,7 +193,7 @@ func TestNewLinkPostgresqlRepository(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewLinkPostgresqlRepository(tt.args.querier, tt.args.qb); !reflect.DeepEqual(got, tt.want) {
+			if got := NewLinkPostgresqlRepository(tt.args.logger, tt.args.querier); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewLinkPostgresqlRepository() = %v, want %v", got, tt.want)
 			}
 		})

@@ -1,4 +1,4 @@
-package storage
+package postgresql
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"github.com/dimuska139/urlshortener/internal/constants"
 	"github.com/dimuska139/urlshortener/internal/logging"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"time"
 )
 
 func NewPostgresPool(conf *config.Config, logger logging.Loggerer) (*pgxpool.Pool, error) {
@@ -15,9 +14,9 @@ func NewPostgresPool(conf *config.Config, logger logging.Loggerer) (*pgxpool.Poo
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse database dsn: %v", err)
 	}
-	poolConfig.HealthCheckPeriod = time.Second * constants.DbPoolHealthcheckPeriodSec
-	poolConfig.MaxConnIdleTime = time.Second * constants.DbMaxConnIdleTimeSec
-	poolConfig.MaxConnLifetime = time.Second * constants.DbMaxConnLifetimeSec
+	poolConfig.HealthCheckPeriod = constants.DbPoolHealthcheckPeriod
+	poolConfig.MaxConnIdleTime = constants.DbMaxConnIdleTime
+	poolConfig.MaxConnLifetime = constants.DbMaxConnLifetime
 	poolConfig.MaxConns = constants.DbPoolIdleConns
 	poolConfig.MinConns = constants.DbPoolMaxConns
 

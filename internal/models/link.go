@@ -10,4 +10,3 @@ type Link struct {
 	Tags      []string
 	CreatedAt time.Time
 }
-

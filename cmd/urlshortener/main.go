@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/dimuska139/urlshortener/internal/infrastructure"
+	"github.com/dimuska139/urlshortener/internal/wire"
 	"github.com/urfave/cli/v2"
 	"os"
 	"os/signal"
@@ -21,15 +21,15 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			cfg, err := infrastructure.InitConfig(c.String("config"))
-			logger := infrastructure.InitLogger(cfg)
+			cfg, err := wire.InitConfig(c.String("config"))
+			logger := wire.InitLogger(cfg)
 
 			if err != nil {
 				logger.Error("initialize config service failed", err, map[string]interface{}{})
 				return err
 			}
 
-			restAPI, err := infrastructure.InitRestAPI(cfg, logger)
+			restAPI, err := wire.InitRestAPI(cfg, logger)
 			if err != nil {
 				logger.Error("initialize REST API failed", err, map[string]interface{}{})
 				return err
@@ -76,15 +76,15 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					cfg, err := infrastructure.InitConfig(c.String("config"))
-					logger := infrastructure.InitLogger(cfg)
+					cfg, err := wire.InitConfig(c.String("config"))
+					logger := wire.InitLogger(cfg)
 
 					if err != nil {
 						logger.Error("initialize config service failed", err, map[string]interface{}{})
 						return err
 					}
 
-					migrator, err := infrastructure.InitMigrator(cfg, logger)
+					migrator, err := wire.InitMigrator(cfg, logger)
 					if err != nil {
 						logger.Error("initialize REST API failed", err, map[string]interface{}{})
 						return err
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		logger := infrastructure.InitLogger(nil)
+		logger := wire.InitLogger(nil)
 		logger.Fatal(fmt.Errorf("unable to run application: %w", err), nil)
 	}
 }

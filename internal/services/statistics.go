@@ -3,21 +3,14 @@ package services
 import (
 	"context"
 	"github.com/dimuska139/urlshortener/internal/config"
-	"github.com/dimuska139/urlshortener/internal/storage"
 )
-
-//go:generate mockgen -source=statistics.go -destination=./statistics_mock.go -package=services
-
-type StatisticsServiceInterface interface {
-	SaveRedirectEvent(ctx context.Context, code string, userAgent string) error
-}
 
 type StatisticsService struct {
 	config *config.Config
-	db     storage.Database
+	db     Storage
 }
 
-func NewStatisticsService(cfg *config.Config, db storage.Database) *StatisticsService {
+func NewStatisticsService(cfg *config.Config, db Storage) *StatisticsService {
 	return &StatisticsService{
 		config: cfg,
 		db:     db,
@@ -25,6 +18,6 @@ func NewStatisticsService(cfg *config.Config, db storage.Database) *StatisticsSe
 }
 
 func (s *StatisticsService) SaveRedirectEvent(ctx context.Context, code string, userAgent string) error {
-	statisticsRepository := s.db.Repositories.GetStatisticsRepository()
+	statisticsRepository := s.db.Repositories.StatisticsRepository()
 	return statisticsRepository.SaveRedirectEvent(ctx, code, userAgent)
 }

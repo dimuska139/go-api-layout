@@ -1,15 +1,16 @@
 //+build wireinject
 
-package infrastructure
+package wire
 
 import (
 	"github.com/dimuska139/urlshortener/internal/api"
 	"github.com/dimuska139/urlshortener/internal/api/middleware"
 	"github.com/dimuska139/urlshortener/internal/config"
 	"github.com/dimuska139/urlshortener/internal/handlers"
+	"github.com/dimuska139/urlshortener/internal/http"
 	"github.com/dimuska139/urlshortener/internal/logging"
+	"github.com/dimuska139/urlshortener/internal/postgresql"
 	"github.com/dimuska139/urlshortener/internal/services"
-	"github.com/dimuska139/urlshortener/internal/storage"
 	"github.com/google/wire"
 )
 
@@ -24,12 +25,13 @@ func InitLogger(config *config.Config) logging.Loggerer {
 
 func InitRestAPI(config *config.Config, logger logging.Loggerer) (*api.RestAPI, error) {
 	wire.Build(
-		storage.NewPostgresPool,
-		storage.NewDatabase,
+		http.NewHttpClient,
+		postgresql.NewPostgresPool,
+		services.NewDatabase,
 		services.NewShrinkService,
-		wire.Bind(new(services.ShrinkServiceInterface), new(*services.ShrinkService)),
+		wire.Bind(new(handlers.ShrinkServiceInterface), new(*services.ShrinkService)),
 		services.NewStatisticsService,
-		wire.Bind(new(services.StatisticsServiceInterface), new(*services.StatisticsService)),
+		wire.Bind(new(handlers.StatisticsServiceInterface), new(*services.StatisticsService)),
 		handlers.NewResponseMapper,
 		handlers.NewShrinkHandler,
 		middleware.NewMiddlewareFactory,
@@ -38,9 +40,9 @@ func InitRestAPI(config *config.Config, logger logging.Loggerer) (*api.RestAPI, 
 	return &api.RestAPI{}, nil
 }
 
-func InitMigrator(config *config.Config, logger logging.Loggerer) (*storage.Migrator, error) {
+func InitMigrator(config *config.Config, logger logging.Loggerer) (*services.Migrator, error) {
 	wire.Build(
-		storage.NewMigrator,
+		services.NewMigrator,
 	)
-	return &storage.Migrator{}, nil
+	return &services.Migrator{}, nil
 }
