@@ -1,7 +1,15 @@
 env: dev
 loglevel: debug
-port: 4401
-domain: https://sh.ru
-jwt_secret_key: 12345
-db:
+shrink:
+  short_url_template: http://localhost:44444/%s
+postgresql:
   dsn: postgres://urlshortener:12345@localhost:771/urlshortener?sslmode=disable
+migrator:
+  dsn: postgres://urlshortener:12345@localhost:771/urlshortener?sslmode=disable
+http_server:
+  port: 44444
+  version: 1.0.0
+  middleware:
+    cors:
+      allowed_origins:
+        - "*"

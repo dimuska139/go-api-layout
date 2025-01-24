@@ -1,0 +1,108 @@
+swagger: "2.0"
+info:
+  title: "Urlshortener"
+  version: "0.0.1"
+basePath: "/v1"
+definitions:
+  InternalError:
+    type: object
+    properties:
+      common:
+        type: string
+        example: "Something went wrong"
+
+  ValidationError:
+    type: object
+    additionalProperties:
+      type: string
+
+  NotFoundError:
+    type: object
+    description: "Not found"
+    properties:
+      common:
+        type: string
+        example: "Link is not found"
+
+  SourceLink:
+    type: object
+    description: "Source URL"
+    required:
+      - long_url
+    properties:
+      long_url:
+        type: string
+        format: url
+
+  ShortLink:
+    type: object
+    description: "Short URL"
+    properties:
+      long_url:
+        type: string
+        format: url
+      short_url:
+        type: string
+        format: url
+
+  RedirectURL:
+    type: object
+    description: "URL for redirection"
+    properties:
+      long_url:
+        type: string
+        format: url
+paths:
+  /shrink:
+    post:
+      summary: "Creates a short URL from a long URL"
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/SourceLink"
+      responses:
+        200:
+          description: "Short URL successfully created"
+          schema:
+            $ref: "#/definitions/ShortLink"
+        400:
+          description: "Validation error"
+          schema:
+            $ref: "#/definitions/ValidationError"
+        500:
+          description: "Internal error"
+          schema:
+            $ref: "#/definitions/InternalError"
+  /{shortCode}:
+    get:
+      summary: "Represents a short URL. Tracks the visit and redirects to the corresponding long URL"
+      parameters:
+        - in: "path"
+          name: "shortCode"
+          description: "The short code to resolve"
+          required: true
+          type: "string"
+        - in: "header"
+          name: "user_agent"
+          required: false
+          type: "string"
+      responses:
+        302:
+          description: "Visit properly tracked and redirected"
+          headers:
+            Location:
+              type: string
+              description: "Redirect url"
+          schema:
+            $ref: "#/definitions/RedirectURL"
+        404:
+          description: "Session is not found"
+          schema:
+            $ref: "#/definitions/NotFoundError"
+        500:
+          description: "Internal error"
+          schema:
+            $ref: "#/definitions/InternalError"
+

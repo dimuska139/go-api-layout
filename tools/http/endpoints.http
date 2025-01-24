@@ -1,0 +1,5 @@
+### Build graph
+POST {{host}}/v1/shrink
+Content-Type: application/json
+
+{"long_url": "https://www.blabla.com/very_long_url"}

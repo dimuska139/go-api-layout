@@ -1,13 +1,92 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/dimuska139/urlshortener/internal/wire"
-	"github.com/urfave/cli/v2"
-	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/dimuska139/urlshortener/internal/config"
+	"github.com/dimuska139/urlshortener/internal/di"
+	"github.com/dimuska139/urlshortener/pkg/logging"
+
+	"github.com/urfave/cli/v2"
+	"os"
 )
+
+var Version = "master"
+
+func runApplication(c *cli.Context) error {
+	ctx := c.Context
+
+	cfg, err := di.InitConfig(c.String("config"), config.VersionParam(Version))
+	if err != nil {
+		return fmt.Errorf("initialize config: %w", err)
+	}
+
+	logging.InitLogger(logging.LogLevel(cfg.Loglevel))
+
+	app, cleanup, err := di.InitApplication(cfg)
+	if err != nil {
+		return fmt.Errorf("initialize application: %w", err)
+	}
+
+	defer cleanup()
+
+	go func() {
+		app.Run(ctx)
+	}()
+
+	logging.Info(ctx, fmt.Sprintf("SerpParserAPI started at :%d", cfg.HttpServer.Port))
+
+	stopSignal := make(chan os.Signal, 1)
+	signal.Notify(stopSignal, syscall.SIGTERM)
+	signal.Notify(stopSignal, syscall.SIGINT)
+
+	reloadSignal := make(chan os.Signal, 1)
+	signal.Notify(reloadSignal, syscall.SIGUSR1)
+
+	for {
+		select {
+		case <-stopSignal:
+			logging.Info(ctx, "Shutdown started")
+			app.Stop(ctx)
+			logging.Info(ctx, "Shutdown finished")
+			os.Exit(0)
+
+		case <-reloadSignal:
+			break
+		}
+	}
+}
+
+func migrate(c *cli.Context) error {
+	ctx := c.Context
+
+	cfg, err := di.InitConfig(c.String("config"), config.VersionParam(Version))
+	if err != nil {
+		return fmt.Errorf("initialize config: %w", err)
+	}
+
+	logging.InitLogger(logging.LogLevel(cfg.Loglevel))
+
+	migrator, cleanup, err := di.InitMigrator(cfg)
+	if err != nil {
+		return fmt.Errorf("initialize migrator: %w", err)
+	}
+
+	defer cleanup()
+
+	logging.Info(ctx, "Applying migrations...")
+
+	if err := migrator.Up(); err != nil {
+		return fmt.Errorf("up migrations: %w", err)
+	}
+
+	logging.Info(ctx, "Applying migrations finished")
+
+	return nil
+}
 
 func main() {
 	app := &cli.App{
@@ -20,50 +99,7 @@ func main() {
 				Usage: "path to the config file",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			cfg, err := wire.InitConfig(c.String("config"))
-			logger := wire.InitLogger(cfg)
-
-			if err != nil {
-				logger.Error("initialize config service failed", err, map[string]interface{}{})
-				return err
-			}
-
-			restAPI, err := wire.InitRestAPI(cfg, logger)
-			if err != nil {
-				logger.Error("initialize REST API failed", err, map[string]interface{}{})
-				return err
-			}
-
-			go func() {
-				if err := restAPI.Start(); err != nil {
-					logger.Fatal(fmt.Errorf("serve API service failed: %w", err), map[string]interface{}{})
-				}
-				logger.Info(fmt.Sprintf("HTTP server started (port: %d)", cfg.Port), nil, map[string]interface{}{})
-			}()
-
-			stopSignal := make(chan os.Signal)
-			signal.Notify(stopSignal, syscall.SIGTERM)
-			signal.Notify(stopSignal, syscall.SIGINT)
-			signal.Notify(stopSignal, syscall.SIGKILL)
-
-			reloadSignal := make(chan os.Signal)
-			signal.Notify(reloadSignal, syscall.SIGUSR1)
-			logger.Info("markup service started", nil, map[string]interface{}{})
-			for {
-				select {
-				case <-stopSignal:
-					logger.Info("shutdown started", nil, map[string]interface{}{})
-					logger.Info("shutdown finished", nil, map[string]interface{}{})
-					os.Exit(0)
-
-				case <-reloadSignal:
-					break
-				}
-			}
-
-			return nil
-		},
+		Action: runApplication,
 		Commands: []*cli.Command{
 			{
 				Name:  "migrate",
@@ -75,35 +111,15 @@ func main() {
 						Usage: "path to the config file",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					cfg, err := wire.InitConfig(c.String("config"))
-					logger := wire.InitLogger(cfg)
-
-					if err != nil {
-						logger.Error("initialize config service failed", err, map[string]interface{}{})
-						return err
-					}
-
-					migrator, err := wire.InitMigrator(cfg, logger)
-					if err != nil {
-						logger.Error("initialize REST API failed", err, map[string]interface{}{})
-						return err
-					}
-
-					logger.Info("applying migrations", nil, nil)
-					if err := migrator.Up(); err != nil {
-						logger.Error("unable apply migrations", err, nil)
-						return err
-					}
-
-					return nil
-				},
+				Action: migrate,
 			},
 		},
 	}
 
+	logging.InitLogger(logging.LogLevelInfo)
+
 	if err := app.Run(os.Args); err != nil {
-		logger := wire.InitLogger(nil)
-		logger.Fatal(fmt.Errorf("unable to run application: %w", err), nil)
+		logging.Fatal(context.Background(), "Can't run application: ",
+			"err", err.Error())
 	}
 }

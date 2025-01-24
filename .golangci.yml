@@ -1,0 +1,89 @@
+linters:
+  disable-all: true
+  enable:
+    - wrapcheck
+    - wsl
+    - bodyclose
+    - forbidigo
+    - prealloc
+    - nestif
+    - dupword
+
+issues:
+  exclude-rules:
+    - path: (.+)_test.go
+      linters:
+        - dupl
+        - wrapcheck
+        - wsl
+    - path: (.+).pb.go
+      linters:
+        - wsl
+
+linters-settings:
+  gomoddirectives:
+    replace-local: true
+
+  gosec:
+    config:
+      G306: "0666" # enable to create files with permissions 0666 (before umask) or lesser
+
+  forbidigo:
+    forbid:
+      - (?i)(^|\.)print(f|ln)?$ #forbidden: print, println, fmt.Print, fmt.Println, fmt.Printf
+
+  wsl:
+    force-case-trailing-whitespace: 1
+    allow-trailing-comment: true
+    allow-separated-leading-comment: true
+
+  revive:
+    enable-all-rules: true
+    confidence: 0.8
+    rules:
+      - name: function-length
+        severity: warning
+        disabled: false
+        arguments: [ 50, 0 ]
+      - name: function-result-limit
+        severity: warning
+        disabled: false
+        arguments: [ 3 ]
+      - name: cognitive-complexity
+        severity: warning
+        disabled: false
+        arguments: [ 20 ]
+      - name: cyclomatic
+        severity: warning
+        disabled: false
+        arguments: [ 10 ]
+      - name: line-length-limit
+        severity: warning
+        disabled: false
+        arguments: [ 110 ]
+      - name: argument-limit
+        severity: warning
+        disabled: false
+        arguments: [ 6 ]
+      - name: unhandled-error
+        disabled: false
+        arguments:
+          - "bytes\\.Buffer\\.Write.*" # always returns nil error
+          - "strings\\.Builder\\.Write.*" # always returns nil error
+      # disabled rules
+      - name: comment-spacings # many false-positives
+        disabled: true
+      - name: max-public-structs # quite annoying rule
+        disabled: true
+      - name: banned-characters
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: flag-parameter # extremely annoying linter, it is absolutely okay to have boolean args
+        disabled: true
+      - name: struct-tag # false-positive on tags implemented by other linters
+        disabled: true
+      - name: add-constant # dont have exclusions list
+        disabled: true
+      - name: empty-lines # it false-positives on one-liners
+        disabled: true
