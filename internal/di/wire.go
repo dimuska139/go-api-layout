@@ -19,6 +19,7 @@ import (
 	"github.com/dimuska139/urlshortener/internal/storage/postgresql/migrator"
 	"github.com/dimuska139/urlshortener/internal/storage/postgresql/statistics"
 	"github.com/dimuska139/urlshortener/pkg/postgresql"
+	"github.com/dimuska139/urlshortener/pkg/postgresql/tx"
 )
 
 func InitConfig(configPath string, version config.VersionParam) (*config.Config, error) {
@@ -45,9 +46,9 @@ func initPostresPool(_ *pgxpool.Pool) (*postgresql.PostgresPool, func(), error) 
 	))
 }
 
-func initTransactionManager(_ *pgxpool.Pool) (*postgresql.TransactionManager, func(), error) {
+func initTransactionManager(_ *pgxpool.Pool) (*tx.Manager, func(), error) {
 	panic(wire.Build(
-		postgresql.NewTransactionManager,
+		tx.NewManager,
 	))
 }
 
@@ -60,11 +61,11 @@ func initLinkRepository(_ *postgresql.PostgresPool) (*link.Repository, func(), e
 func initShrinkService(
 	_ *config.Config,
 	_ *postgresql.PostgresPool,
-	_ *postgresql.TransactionManager) (*shrinkService.ShrinkService, func(), error) {
+	_ *tx.Manager) (*shrinkService.ShrinkService, func(), error) {
 	panic(wire.Build(
 		initLinkRepository,
 		wire.Bind(new(shrinkService.LinkRepository), new(*link.Repository)),
-		wire.Bind(new(shrinkService.TransactionManager), new(*postgresql.TransactionManager)),
+		wire.Bind(new(shrinkService.TransactionManager), new(*tx.Manager)),
 
 		wire.FieldsOf(new(*config.Config), "shrink"),
 		shrinkService.NewShrinkService,

@@ -19,6 +19,7 @@ import (
 	"github.com/dimuska139/urlshortener/internal/storage/postgresql/migrator"
 	"github.com/dimuska139/urlshortener/internal/storage/postgresql/statistics"
 	"github.com/dimuska139/urlshortener/pkg/postgresql"
+	"github.com/dimuska139/urlshortener/pkg/postgresql/tx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -63,9 +64,9 @@ func initPostresPool(pool *pgxpool.Pool) (*postgresql.PostgresPool, func(), erro
 	}, nil
 }
 
-func initTransactionManager(pool *pgxpool.Pool) (*postgresql.TransactionManager, func(), error) {
-	transactionManager := postgresql.NewTransactionManager(pool)
-	return transactionManager, func() {
+func initTransactionManager(pool *pgxpool.Pool) (*tx.Manager, func(), error) {
+	manager := tx.NewManager(pool)
+	return manager, func() {
 	}, nil
 }
 
@@ -75,13 +76,13 @@ func initLinkRepository(postgresPool *postgresql.PostgresPool) (*link.Repository
 	}, nil
 }
 
-func initShrinkService(configConfig *config.Config, postgresPool *postgresql.PostgresPool, transactionManager *postgresql.TransactionManager) (*shrink.ShrinkService, func(), error) {
+func initShrinkService(configConfig *config.Config, postgresPool *postgresql.PostgresPool, manager *tx.Manager) (*shrink.ShrinkService, func(), error) {
 	shrinkConfig := configConfig.Shrink
 	repository, cleanup, err := initLinkRepository(postgresPool)
 	if err != nil {
 		return nil, nil, err
 	}
-	shrinkService := shrink.NewShrinkService(shrinkConfig, transactionManager, repository)
+	shrinkService := shrink.NewShrinkService(shrinkConfig, manager, repository)
 	return shrinkService, func() {
 		cleanup()
 	}, nil
@@ -159,13 +160,13 @@ func InitApplication(configConfig *config.Config) (*application.Application, fun
 		cleanup()
 		return nil, nil, err
 	}
-	transactionManager, cleanup3, err := initTransactionManager(pool)
+	manager, cleanup3, err := initTransactionManager(pool)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	shrinkService, cleanup4, err := initShrinkService(configConfig, postgresPool, transactionManager)
+	shrinkService, cleanup4, err := initShrinkService(configConfig, postgresPool, manager)
 	if err != nil {
 		cleanup3()
 		cleanup2()
